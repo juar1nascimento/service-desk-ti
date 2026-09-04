@@ -1,0 +1,10 @@
+# Ambiente virtual
+venv/
+.venv/
+
+# Segredos locais (NUNCA SUBIR PARA O GIT)
+.streamlit/secrets.toml
+
+# Pycache
+__pycache__/
+*.pyc
