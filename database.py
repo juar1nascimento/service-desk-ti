@@ -1,22 +1,30 @@
+import os
 import urllib.parse
+import streamlit as st
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# Senha configurada para a sua conexão
-SENHA_POSTGRES = "Metahome@2026"
+if "postgres" in st.secrets:
+    db_config = st.secrets["postgres"]
+    user = db_config["user"]
+    password = urllib.parse.quote_plus(str(db_config["password"]))
+    host = db_config["host"]
+    port = db_config.get("port", 5432)
+    dbname = db_config["dbname"]
+    
+    # Injeta obrigatoriamente a opção sslmode=require para bancos em nuvem (Neon/Render)
+    DATABASE_URL = f"postgresql+psycopg://{user}:{password}@{host}:{port}/{dbname}?sslmode=require"
+else:
+    # Conexão Local (Fallback)
+    SENHA_POSTGRES = "Metahome@2026"
+    senha_encoded = urllib.parse.quote_plus(SENHA_POSTGRES)
+    DATABASE_URL = f"postgresql+psycopg://postgres:{senha_encoded}@127.0.0.1:5432/service_desk"
 
-# Converte caracteres especiais da senha (como @) para um formato seguro em URLs
-senha_encoded = urllib.parse.quote_plus(SENHA_POSTGRES)
-
-# String de conexão usando o driver psycopg 3 (postgresql+psycopg://)
-DATABASE_URL = f"postgresql+psycopg://postgres:{senha_encoded}@127.0.0.1:5432/service_desk"
-
-# Cria a engine de conexão com timeout de 10 segundos
 engine = create_engine(
     DATABASE_URL,
-    connect_args={
-        'connect_timeout': 10
-    }
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=10
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
